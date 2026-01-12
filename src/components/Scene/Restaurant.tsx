@@ -925,6 +925,7 @@ export function People({
   const agents = useRef<Agent[]>([])
   const nextId = useRef(1)
   const pending = useRef(0)
+  const arrivedTotal = useRef(0)
   const [revision, setRevision] = useState(0)
   const departedCount = useRef(0)
   const MAX_ARRIVALS_PER_FRAME = 10
@@ -1028,12 +1029,29 @@ export function People({
     const d = Math.max(dt || 0.016, 0.001)
     simTime.current += d
     const now = simTime.current
-    const ratePerSec = isFiniteNumber(effectiveIncoming) ? effectiveIncoming : 0
-    const safeRatePerSec = ratePerSec > 0 ? ratePerSec : 0
-    const expected = safeRatePerSec * d
-    let arrivals = samplePoisson(expected)
-    if (arrivals > MAX_ARRIVALS_PER_FRAME) arrivals = MAX_ARRIVALS_PER_FRAME
-    if (arrivals > 0) pending.current += arrivals
+    if (cfg.timeLimitSec > 0) {
+      const N = Math.max(0, Math.floor(cfg.incoming || 0))
+      if (N > 0) {
+        const remaining = Math.max(0, N - arrivedTotal.current)
+        if (remaining > 0) {
+          const ratePerSec = N / Math.max(1, cfg.timeLimitSec)
+          const expected = ratePerSec * d
+          let arrivals = samplePoisson(expected)
+          arrivals = Math.min(arrivals, remaining, MAX_ARRIVALS_PER_FRAME)
+          if (arrivals > 0) {
+            pending.current += arrivals
+            arrivedTotal.current += arrivals
+          }
+        }
+      }
+    } else {
+      const ratePerSec = isFiniteNumber(effectiveIncoming) ? effectiveIncoming : 0
+      const safeRatePerSec = ratePerSec > 0 ? ratePerSec : 0
+      const expected = safeRatePerSec * d
+      let arrivals = samplePoisson(expected)
+      if (arrivals > MAX_ARRIVALS_PER_FRAME) arrivals = MAX_ARRIVALS_PER_FRAME
+      if (arrivals > 0) pending.current += arrivals
+    }
 
     spawnCooldown.current -= d
     if (pending.current > 0 && spawnCooldown.current <= 0) {
