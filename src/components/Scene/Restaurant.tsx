@@ -925,17 +925,21 @@ export function People({
   const agents = useRef<Agent[]>([])
   const nextId = useRef(1)
   const pending = useRef(0)
-  const prevIncoming = useRef(effectiveIncoming)
   const [revision, setRevision] = useState(0)
   const departedCount = useRef(0)
+  const MAX_ARRIVALS_PER_FRAME = 10
 
-  useEffect(() => {
-    const prev = Math.floor(prevIncoming.current || 0)
-    const now = Math.floor(effectiveIncoming || 0)
-    const diff = Math.max(0, now - prev)
-    if (diff > 0) pending.current += diff
-    prevIncoming.current = effectiveIncoming
-  }, [effectiveIncoming])
+  const samplePoisson = (expected: number) => {
+    if (expected <= 0) return 0
+    const L = Math.exp(-expected)
+    let k = 0
+    let p = 1
+    do {
+      k++
+      p *= Math.random()
+    } while (p > L && k < 1000)
+    return k - 1
+  }
 
   const spawnCooldown = useRef(0)
   const spawnOne = (now: number) => {
@@ -1024,6 +1028,12 @@ export function People({
     const d = Math.max(dt || 0.016, 0.001)
     simTime.current += d
     const now = simTime.current
+    const ratePerSec = isFiniteNumber(effectiveIncoming) ? effectiveIncoming : 0
+    const safeRatePerSec = ratePerSec > 0 ? ratePerSec : 0
+    const expected = safeRatePerSec * d
+    let arrivals = samplePoisson(expected)
+    if (arrivals > MAX_ARRIVALS_PER_FRAME) arrivals = MAX_ARRIVALS_PER_FRAME
+    if (arrivals > 0) pending.current += arrivals
 
     spawnCooldown.current -= d
     if (pending.current > 0 && spawnCooldown.current <= 0) {
