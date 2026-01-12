@@ -102,7 +102,7 @@ export default function ControlPanel({
   // 回転率＝累計退店人数 ÷ 総席数
   const totalSeats = cfg.table4Count * 4 + cfg.table2Count * 2
   const rotation = totalSeats > 0 ? stats.departed / totalSeats : 0
-  const revPashPerHour = stats.revPASHPerHour
+  const revPashPerSec = stats.revPASHPerSec
   const staffUtil = Math.min(1, Math.max(0, stats.staffUtilization ?? 0))
 
   const remainLabel = remainingSec < 0 ? 'INF' : String(Math.ceil(remainingSec))
@@ -846,7 +846,7 @@ export default function ControlPanel({
                 <div>時間制: <b>{cfg.timeLimitOn ? 'ON' : 'OFF'}</b></div>
                 <div>時間制上限: <b>{cfg.timeLimitOn ? `${stayCapSec.toFixed(1)}秒` : '-'}</b></div>
                 <div>実効客単価: <b>{Math.round(effectiveAvgSpend).toLocaleString()}円</b></div>
-                <div>RevPASH: <b>{revPashPerHour == null ? '-' : `${revPashPerHour.toFixed(0)} 円/席/時`}</b></div>
+                <div>RevPASH: <b>{revPashPerSec == null ? '-' : `${revPashPerSec.toFixed(3)} 円/席/秒`}</b></div>
                 <div>従業員稼働率: <b>{Math.round(staffUtil * 100)}%</b></div>
               </div>
               <div className="pill">

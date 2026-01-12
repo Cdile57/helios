@@ -68,7 +68,6 @@ export type LiveStats = {
   staffCount: number
   staffUtilization?: number
   revPASHPerSec?: number
-  revPASHPerHour?: number
 }
 
 const clamp = (v: number, min: number, max: number) =>
@@ -474,10 +473,9 @@ export default function App() {
           ? nowSec - startedAtRef.current
           : 0)
   const totalSeats = safeCfg.table4Count * 4 + safeCfg.table2Count * 2
-  const elapsedHours = Math.max(0, elapsedSeconds || 0) / 3600
-  const revPASHPerHour =
-    totalSeats > 0 && elapsedHours > 1e-6
-      ? totalSales / (totalSeats * elapsedHours)
+  const revPASHPerSec =
+    totalSeats > 0 && elapsedSeconds > 1e-6
+      ? totalSales / (totalSeats * elapsedSeconds)
       : undefined
 
   // Capture start time when switching to running.
@@ -640,7 +638,7 @@ export default function App() {
               clamp(v, m, Math.max(m, safeCfg.width - safeCfg.doorWidth - m)),
             )
           }}
-          stats={{ ...stats, revPASHPerHour }}
+          stats={{ ...stats, revPASHPerSec }}
           totalSales={totalSales}
           elapsedSeconds={elapsedSeconds}
           isRunning={isRunning}
