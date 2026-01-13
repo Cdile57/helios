@@ -18,6 +18,80 @@ type Props = {
   onResetTimer: () => void
 }
 
+type DraftNumberInputProps = {
+  value: number
+  onCommit: (n: number) => void
+  min?: number
+  max?: number
+  step?: number
+  className?: string
+  disabled?: boolean
+}
+
+const clampNumber = (n: number, min?: number, max?: number) => {
+  let next = n
+  if (min != null) next = Math.max(min, next)
+  if (max != null) next = Math.min(max, next)
+  return next
+}
+
+function DraftNumberInput({
+  value,
+  onCommit,
+  min,
+  max,
+  step,
+  className,
+  disabled,
+}: DraftNumberInputProps) {
+  const [draft, setDraft] = React.useState(() => String(value))
+  const isFocusedRef = React.useRef(false)
+
+  React.useEffect(() => {
+    if (!isFocusedRef.current) {
+      setDraft(String(value))
+    }
+  }, [value])
+
+  const commitDraft = React.useCallback(() => {
+    const raw = draft.trim()
+    const parsed = raw === '' ? NaN : Number(raw)
+    const next = Number.isFinite(parsed) ? clampNumber(parsed, min, max) : value
+    onCommit(next)
+    setDraft(String(next))
+  }, [draft, min, max, onCommit, value])
+
+  return (
+    <input
+      type="number"
+      min={min}
+      max={max}
+      step={step}
+      value={draft}
+      onFocus={() => {
+        isFocusedRef.current = true
+      }}
+      onBlur={() => {
+        isFocusedRef.current = false
+        commitDraft()
+      }}
+      onChange={e => setDraft(e.target.value)}
+      onKeyDown={e => {
+        if (e.key === 'Enter') {
+          e.preventDefault()
+          commitDraft()
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault()
+          setDraft(String(value))
+        }
+      }}
+      className={className}
+      disabled={disabled}
+    />
+  )
+}
+
 const sideLabel: Record<Side, string> = {
   left: '左',
   right: '右',
@@ -65,8 +139,8 @@ export default function ControlPanel({
         ? { ...p.repulsion, ...patch.repulsion }
         : p.repulsion,
     }))
-  const onNum = (key: keyof Config, v: any) =>
-    set({ [key]: Number(v) || 0 } as Partial<Config>)
+  const setNum = (key: keyof Config, n: number) =>
+    set({ [key]: n } as Partial<Config>)
   const setAvoidanceRadius = (key: keyof Config['avoidance']['radius'], v: any) =>
     setCfg(p => ({
       ...p,
@@ -75,14 +149,27 @@ export default function ControlPanel({
         radius: { ...p.avoidance.radius, [key]: Number(v) || 0 },
       },
     }))
+  const commitAvoidanceRadius = (key: keyof Config['avoidance']['radius'], n: number) =>
+    setCfg(p => ({
+      ...p,
+      avoidance: {
+        ...p.avoidance,
+        radius: { ...p.avoidance.radius, [key]: n },
+      },
+    }))
   const setRepulsion = (key: keyof Config['repulsion'], v: any) =>
     setCfg(p => ({
       ...p,
       repulsion: { ...p.repulsion, [key]: Number(v) || 0 },
     }))
-  const setToiletProbPct = (v: any) => {
-    const pct = Math.min(100, Math.max(0, Number(v) || 0))
-    set({ toiletProb: pct / 100 })
+  const commitRepulsion = (key: keyof Config['repulsion'], n: number) =>
+    setCfg(p => ({
+      ...p,
+      repulsion: { ...p.repulsion, [key]: n },
+    }))
+  const setToiletProbPct = (pct: number) => {
+    const clamped = Math.min(100, Math.max(0, pct))
+    set({ toiletProb: clamped / 100 })
   }
 
   const [open, setOpen] = React.useState<Record<SectionKey, boolean>>({
@@ -350,12 +437,11 @@ export default function ControlPanel({
           <div className="row2">
             <label className="field">
               <div className="label">制限時間（秒）</div>
-              <input
-                type="number"
+              <DraftNumberInput
                 min={0}
                 step={1}
                 value={cfg.timeLimitSec}
-                onChange={e => onNum('timeLimitSec', e.target.value)}
+                onCommit={n => setNum('timeLimitSec', n)}
                 className="input"
               />
               <div className="sub">0 = 無制限（設定変更で今からカウント）</div>
@@ -380,23 +466,21 @@ export default function ControlPanel({
           <div className="row2" style={{ marginTop: 10 }}>
             <label className="field">
               <div className="label">基準来客数（人数・追加分）</div>
-              <input
-                type="number"
+              <DraftNumberInput
                 min={0}
                 step={1}
                 value={cfg.incoming}
-                onChange={e => onNum('incoming', e.target.value)}
+                onCommit={n => setNum('incoming', n)}
                 className="input"
               />
             </label>
             <label className="field">
               <div className="label">店員の数</div>
-              <input
-                type="number"
+              <DraftNumberInput
                 min={0}
                 step={1}
                 value={cfg.staffCount ?? 0}
-                onChange={e => onNum('staffCount', e.target.value)}
+                onCommit={n => setNum('staffCount', n)}
                 className="input"
               />
             </label>
@@ -413,23 +497,21 @@ export default function ControlPanel({
               <div className="row2">
                 <label className="field">
                   <div className="label">店の横幅 (m)</div>
-                  <input
-                    type="number"
+                  <DraftNumberInput
                     min={1}
                     step={0.1}
                     value={cfg.width}
-                    onChange={e => onNum('width', e.target.value)}
+                    onCommit={n => setNum('width', n)}
                     className="input"
                   />
                 </label>
                 <label className="field">
                   <div className="label">店の縦幅 (m)</div>
-                  <input
-                    type="number"
+                  <DraftNumberInput
                     min={1}
                     step={0.1}
                     value={cfg.depth}
-                    onChange={e => onNum('depth', e.target.value)}
+                    onCommit={n => setNum('depth', n)}
                     className="input"
                   />
                 </label>
@@ -437,35 +519,32 @@ export default function ControlPanel({
               <div className="row2" style={{ marginTop: 10 }}>
                 <label className="field">
                   <div className="label">ドア幅 (m)</div>
-                  <input
-                    type="number"
+                  <DraftNumberInput
                     min={0.6}
                     step={0.1}
                     value={cfg.doorWidth}
-                    onChange={e => onNum('doorWidth', e.target.value)}
+                    onCommit={n => setNum('doorWidth', n)}
                     className="input"
                   />
                 </label>
                 <label className="field">
                   <div className="label">ドア高 (m)</div>
-                  <input
-                    type="number"
+                  <DraftNumberInput
                     min={1.6}
                     step={0.1}
                     value={cfg.doorHeight}
-                    onChange={e => onNum('doorHeight', e.target.value)}
+                    onCommit={n => setNum('doorHeight', n)}
                     className="input"
                   />
                 </label>
               </div>
               <label className="field" style={{ marginTop: 10 }}>
                 <div className="label">ドアの位置（左端から m）</div>
-                <input
-                  type="number"
+                <DraftNumberInput
                   step={0.1}
                   min={0}
                   value={Number.isFinite(doorLeft) ? Number(doorLeft.toFixed(2)) : 0}
-                  onChange={e => setDoorLeft(Number(e.target.value))}
+                  onCommit={n => setDoorLeft(n)}
                   className="input"
                 />
                 <div className="sub">3D画面の青いドアをドラッグでも移動可能</div>
@@ -484,23 +563,21 @@ export default function ControlPanel({
               <div className="row2">
                 <label className="field">
                   <div className="label">4人席の数</div>
-                  <input
-                    type="number"
+                  <DraftNumberInput
                     min={0}
                     step={1}
                     value={cfg.table4Count}
-                    onChange={e => onNum('table4Count', e.target.value)}
+                    onCommit={n => setNum('table4Count', n)}
                     className="input"
                   />
                 </label>
                 <label className="field">
                   <div className="label">2人席の数</div>
-                  <input
-                    type="number"
+                  <DraftNumberInput
                     min={0}
                     step={1}
                     value={cfg.table2Count}
-                    onChange={e => onNum('table2Count', e.target.value)}
+                    onCommit={n => setNum('table2Count', n)}
                     className="input"
                   />
                 </label>
@@ -519,24 +596,22 @@ export default function ControlPanel({
               <div className="row2">
                 <label className="field">
                   <div className="label">基準客単価 (円)</div>
-                  <input
-                    type="number"
+                  <DraftNumberInput
                     min={0}
                     step={100}
                     value={(cfg as any).avgSpend ?? 1500}
-                    onChange={e => onNum('avgSpend' as any, e.target.value)}
+                    onCommit={n => setNum('avgSpend' as any, n)}
                     className="input"
                   />
                 </label>
                 <label className="field">
                   <div className="label">トイレ確率(%)</div>
-                  <input
-                    type="number"
+                  <DraftNumberInput
                     min={0}
                     max={100}
                     step={0.1}
                     value={Number(((cfg.toiletProb ?? 0.51) * 100).toFixed(1))}
-                    onChange={e => setToiletProbPct(e.target.value)}
+                    onCommit={n => setToiletProbPct(n)}
                     className="input"
                   />
                 </label>
@@ -544,36 +619,33 @@ export default function ControlPanel({
               <div className="row2" style={{ marginTop: 10 }}>
                 <label className="field">
                   <div className="label">基準価格 P0</div>
-                  <input
-                    type="number"
+                  <DraftNumberInput
                     min={0}
                     step={1}
                     value={cfg.basePrice ?? 0}
-                    onChange={e => onNum('basePrice', e.target.value)}
+                    onCommit={n => setNum('basePrice', n)}
                     className="input"
                   />
                 </label>
                 <label className="field">
                   <div className="label">現在価格 P</div>
-                  <input
-                    type="number"
+                  <DraftNumberInput
                     min={0}
                     step={1}
                     value={cfg.currentPrice ?? 0}
-                    onChange={e => onNum('currentPrice', e.target.value)}
+                    onCommit={n => setNum('currentPrice', n)}
                     className="input"
                   />
                 </label>
               </div>
               <label className="field" style={{ marginTop: 10 }}>
                 <div className="label">価格補正 ε（価格弾力性）</div>
-                <input
-                  type="number"
+                <DraftNumberInput
                   min={-3.0}
                   max={-0.2}
                   step={0.1}
                   value={cfg.priceElasticity ?? -1.0}
-                  onChange={e => onNum('priceElasticity', e.target.value)}
+                  onCommit={n => setNum('priceElasticity', n)}
                   className="input"
                 />
                 <div className="sub">負の値を想定</div>
@@ -592,23 +664,21 @@ export default function ControlPanel({
               <div className="row2">
                 <label className="field">
                   <div className="label">基準滞在時間 T0 (sec)</div>
-                  <input
-                    type="number"
+                  <DraftNumberInput
                     min={0}
                     step={1}
                     value={cfg.baseStaySec ?? 0}
-                    onChange={e => onNum('baseStaySec', e.target.value)}
+                    onCommit={n => setNum('baseStaySec', n)}
                     className="input"
                   />
                 </label>
                 <label className="field">
                   <div className="label">時間制上限 T_cap (sec)</div>
-                  <input
-                    type="number"
+                  <DraftNumberInput
                     min={0}
                     step={1}
                     value={cfg.timeCapSec ?? 0}
-                    onChange={e => onNum('timeCapSec', e.target.value)}
+                    onCommit={n => setNum('timeCapSec', n)}
                     className="input"
                     disabled={!cfg.timeLimitOn}
                   />
@@ -629,13 +699,12 @@ export default function ControlPanel({
                 </label>
                 <label className="field">
                   <div className="label">客単価割引率 (%)</div>
-                  <input
-                    type="number"
+                  <DraftNumberInput
                     min={0}
                     max={30}
                     step={1}
                     value={cfg.timeDiscountPct ?? 0}
-                    onChange={e => onNum('timeDiscountPct', e.target.value)}
+                    onCommit={n => setNum('timeDiscountPct', n)}
                     className="input"
                     disabled={!cfg.timeLimitOn}
                   />
@@ -656,23 +725,21 @@ export default function ControlPanel({
               <div className="row2">
                 <label className="field">
                   <div className="label">店員サービス余白 (m)</div>
-                  <input
-                    type="number"
+                  <DraftNumberInput
                     min={0}
                     step={0.1}
                     value={cfg.staffServiceMargin ?? 0}
-                    onChange={e => onNum('staffServiceMargin', e.target.value)}
+                    onCommit={n => setNum('staffServiceMargin', n)}
                     className="input"
                   />
                 </label>
                 <label className="field">
                   <div className="label">閾値（負荷の閾値）</div>
-                  <input
-                    type="number"
+                  <DraftNumberInput
                     min={0}
                     step={0.1}
                     value={cfg.thresholdTablesPerStaff ?? 0}
-                    onChange={e => onNum('thresholdTablesPerStaff', e.target.value)}
+                    onCommit={n => setNum('thresholdTablesPerStaff', n)}
                     className="input"
                   />
                   <div className="sub">1人の店員が同時に対応できる卓数上限</div>
@@ -714,13 +781,12 @@ export default function ControlPanel({
                 ] as const).map(([key, label]) => (
                   <label key={`rep-${key}`} className="field">
                     <div className="label">{label}</div>
-                    <input
-                      type="number"
+                    <DraftNumberInput
                       min={0}
                       max={4}
                       step={0.05}
                       value={cfg.repulsion[key]}
-                      onChange={e => setRepulsion(key, e.target.value)}
+                      onCommit={n => commitRepulsion(key, n)}
                       className="input"
                     />
                     <input
@@ -748,13 +814,12 @@ export default function ControlPanel({
                 ] as const).map(([key, label]) => (
                   <label key={`rad-${key}`} className="field">
                     <div className="label">{label}</div>
-                    <input
-                      type="number"
+                    <DraftNumberInput
                       min={0.2}
                       max={3}
                       step={0.05}
                       value={cfg.avoidance.radius[key]}
-                      onChange={e => setAvoidanceRadius(key, e.target.value)}
+                      onCommit={n => commitAvoidanceRadius(key, n)}
                       className="input"
                     />
                     <input
