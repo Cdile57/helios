@@ -595,16 +595,6 @@ export default function ControlPanel({
             <div className="acc-body">
               <div className="row2">
                 <label className="field">
-                  <div className="label">基準客単価 (円)</div>
-                  <DraftNumberInput
-                    min={0}
-                    step={100}
-                    value={(cfg as any).avgSpend ?? 1500}
-                    onCommit={n => setNum('avgSpend' as any, n)}
-                    className="input"
-                  />
-                </label>
-                <label className="field">
                   <div className="label">トイレ確率(%)</div>
                   <DraftNumberInput
                     min={0}
