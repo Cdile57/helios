@@ -358,6 +358,14 @@ export default function App() {
 
   const safeCfg = useMemo(() => normalizeConfig(cfg, warnKeysOnce), [cfg, warnKeysOnce])
 
+  useEffect(() => {
+    setCfg(p => {
+      if (p.currentPrice === p.avgSpend) return p
+      if (p.currentPrice == null) return p
+      return { ...p, avgSpend: p.currentPrice }
+    })
+  }, [cfg.currentPrice])
+
   // Door left edge position.
   const initialDoorLeft = useMemo(
     () => (safeCfg.width - safeCfg.doorWidth) / 2,
