@@ -116,7 +116,7 @@ const DEFAULT_CONFIG: Config = {
   kitchenSide: 'right',
   toiletSide: 'left',
   incoming: 0,
-  toiletProb: 0.51,
+  toiletProb: 0.3,
   avgSpend: 1500,
   staffCount: 0,
   staffServiceMargin: 0.6,
@@ -138,11 +138,11 @@ const DEFAULT_CONFIG: Config = {
     },
   },
   repulsion: {
-    humanHuman: 0.2,
-    humanStaff: 0.2,
-    humanObstacle: 0.2,
-    staffHuman: 0.2,
-    staffObstacle: 0.2,
+    humanHuman: 0.05,
+    humanStaff: 0.05,
+    humanObstacle: 0.05,
+    staffHuman: 0.05,
+    staffObstacle: 0.05,
   },
   // Default time limit: no limit.
   timeLimitSec: 0,
@@ -402,19 +402,6 @@ export default function App() {
   const [totalSales, setTotalSales] = useState(0)
   const lastDeparted = useRef(0)
 
-  const timeDiscount = Math.min(30, Math.max(0, safeCfg.timeDiscountPct || 0))
-  const effectiveAvgSpend = safeCfg.timeLimitOn
-    ? (safeCfg.avgSpend || 0) * (1 - timeDiscount / 100)
-    : safeCfg.avgSpend || 0
-
-  useEffect(() => {
-    if (stats.departed > lastDeparted.current) {
-      const diff = stats.departed - lastDeparted.current
-      setTotalSales(prev => prev + diff * effectiveAvgSpend)
-      lastDeparted.current = stats.departed
-    }
-  }, [stats.departed, effectiveAvgSpend])
-
   const activeTables = stats.activeTables || 0
   const staffForLoad = Math.max(1, safeCfg.staffCount || 0)
   const threshold = safeCfg.thresholdTablesPerStaff || 0
@@ -426,6 +413,24 @@ export default function App() {
   if (!Number.isFinite(rawServiceCoef)) {
     warnValueOnce('serviceCoef', rawServiceCoef)
   }
+
+  const timeDiscount = Math.min(30, Math.max(0, safeCfg.timeDiscountPct || 0))
+  const baseSpend = safeCfg.avgSpend || 0
+  const discountedSpend = safeCfg.timeLimitOn
+    ? baseSpend * (1 - timeDiscount / 100)
+    : baseSpend
+  const spendServiceCoef = Number.isFinite(serviceCoef) ? serviceCoef : 1.0
+  const effectiveAvgSpend =
+    discountedSpend + (spendServiceCoef - 1) * baseSpend
+
+  useEffect(() => {
+    if (stats.departed > lastDeparted.current) {
+      const diff = stats.departed - lastDeparted.current
+      setTotalSales(prev => prev + diff * effectiveAvgSpend)
+      lastDeparted.current = stats.departed
+    }
+  }, [stats.departed, effectiveAvgSpend])
+
   const priceRatio =
     safeCfg.basePrice > 0 && safeCfg.currentPrice > 0
       ? safeCfg.currentPrice / safeCfg.basePrice
