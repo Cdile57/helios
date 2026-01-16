@@ -414,15 +414,13 @@ export default function App() {
     warnValueOnce('serviceCoef', rawServiceCoef)
   }
 
-  const timeDiscount = Math.min(30, Math.max(0, safeCfg.timeDiscountPct || 0))
   const baseSpend = safeCfg.avgSpend || 0
-  const discountedSpend = safeCfg.timeLimitOn
-    ? baseSpend * (1 - timeDiscount / 100)
-    : baseSpend
   const stayBaseSec = safeCfg.baseStaySec || 0
-  const stayActualSec = safeCfg.timeLimitOn ? safeCfg.timeCapSec || 0 : stayBaseSec
-  const stayCoef = stayBaseSec > 0 ? stayActualSec / stayBaseSec : 1
-  const effectiveAvgSpend = discountedSpend * stayCoef
+  const stayActualSec = safeCfg.timeLimitOn
+    ? safeCfg.timeCapSec || 0
+    : stayBaseSec * (Number.isFinite(serviceCoef) ? serviceCoef : 1.0)
+  const stayCoef = stayActualSec / (stayBaseSec > 0 ? stayBaseSec : 1)
+  const effectiveAvgSpend = baseSpend * stayCoef
 
   useEffect(() => {
     if (stats.departed > lastDeparted.current) {

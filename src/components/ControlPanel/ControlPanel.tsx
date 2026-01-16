@@ -213,7 +213,7 @@ export default function ControlPanel({
     (cfg.incoming || 0) * Math.pow(priceRatio, cfg.priceElasticity || 0)
   const baseStaySec = Math.max(0, cfg.baseStaySec || 0)
   const stayCapSec = Math.max(0, cfg.timeCapSec || 0)
-  const staySec = cfg.timeLimitOn ? stayCapSec : baseStaySec
+  const staySec = cfg.timeLimitOn ? stayCapSec : baseStaySec * coef
 
   const summaryPricing = `${effectiveIncoming.toFixed(1)}人/単位 → ${Math.round(
     effectiveAvgSpend,
