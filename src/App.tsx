@@ -653,6 +653,7 @@ export default function App() {
           stats={{ ...stats, revPASHPerSec }}
           totalSales={totalSales}
           elapsedSeconds={elapsedSeconds}
+          effectiveAvgSpend={effectiveAvgSpend}
           isRunning={isRunning}
           remainingSec={remainingSec}
           onToggleRun={() => setIsRunning(v => !v)}

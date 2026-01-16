@@ -10,6 +10,7 @@ type Props = {
   stats: LiveStats
   totalSales: number
   elapsedSeconds: number
+  effectiveAvgSpend: number
 
   // ?追加
   isRunning: boolean
@@ -117,6 +118,7 @@ export default function ControlPanel({
   setDoorLeft,
   stats,
   totalSales,
+  effectiveAvgSpend,
   isRunning,
   remainingSec,
   onToggleRun,
@@ -209,10 +211,6 @@ export default function ControlPanel({
       : 1
   const effectiveIncoming =
     (cfg.incoming || 0) * Math.pow(priceRatio, cfg.priceElasticity || 0)
-  const timeDiscount = Math.min(30, Math.max(0, cfg.timeDiscountPct || 0))
-  const effectiveAvgSpend = cfg.timeLimitOn
-    ? (cfg.avgSpend || 0) * (1 - timeDiscount / 100)
-    : (cfg.avgSpend || 0)
   const baseStaySec = Math.max(0, cfg.baseStaySec || 0)
   const stayRawSec = baseStaySec * coef
   const stayCapSec = Math.max(0, cfg.timeCapSec || 0)
