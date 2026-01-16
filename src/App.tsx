@@ -419,9 +419,8 @@ export default function App() {
   const discountedSpend = safeCfg.timeLimitOn
     ? baseSpend * (1 - timeDiscount / 100)
     : baseSpend
-  const spendServiceCoef = Number.isFinite(serviceCoef) ? serviceCoef : 1.0
-  const effectiveAvgSpend =
-    discountedSpend + (spendServiceCoef - 1) * baseSpend
+  const stayCoef = safeCfg.baseStaySec / DEFAULT_CONFIG.baseStaySec
+  const effectiveAvgSpend = discountedSpend + (stayCoef - 1) * baseSpend
 
   useEffect(() => {
     if (stats.departed > lastDeparted.current) {
